@@ -9,6 +9,7 @@ import type { ClientOptions, Event, EventHint, Scope, SeverityLevel } from '@sen
 import { eventFromException, eventFromMessage } from './eventbuilder';
 import { makeUniappTransport } from './transport';
 import { SDK_NAME, SDK_VERSION } from './version';
+import { debugLog, debugError } from './debug';
 
 /**
  * Configuration options for the Uniapp SDK.
@@ -33,6 +34,11 @@ export interface UniappOptions extends ClientOptions {
     onpagenotfound?: boolean;
     onmemorywarning?: boolean;
   };
+
+  /**
+   * Enable debug logging
+   */
+  debug?: boolean;
 }
 
 /**
@@ -43,13 +49,25 @@ export class UniappClient extends BaseClient<UniappOptions> {
    * Creates a new Uniapp SDK instance.
    */
   public constructor(options: UniappOptions) {
+    debugLog('[Sentry Client] Constructor called');
+    debugLog('[Sentry Client] options.dsn:', options.dsn);
+    debugLog('[Sentry Client] options.transport:', typeof options.transport);
+
     // Set default transport if not provided
     const clientOptions: UniappOptions = {
       transport: makeUniappTransport,
       ...options,
     };
 
-    super(clientOptions);
+    debugLog('[Sentry Client] Calling super(options)...');
+    try {
+      super(clientOptions);
+      debugLog('[Sentry Client] super() completed successfully!');
+    } catch (error) {
+      debugError('[Sentry Client] super() threw error:', error);
+      throw error;
+    }
+    debugLog('[Sentry Client] Constructor complete');
   }
 
   /**
@@ -60,6 +78,10 @@ export class UniappClient extends BaseClient<UniappOptions> {
     hint: EventHint,
     scope?: Scope
   ): PromiseLike<Event | null> {
+    debugLog('[Sentry Client] _prepareEvent called for event:', event.event_id);
+    debugLog('[Sentry Client] Event type:', event.type);
+    debugLog('[Sentry Client] Event message:', event.message);
+
     // Set SDK info
     event.sdk = {
       name: SDK_NAME,

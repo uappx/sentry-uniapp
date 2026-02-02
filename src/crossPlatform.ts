@@ -6,6 +6,8 @@ declare const dd: any;   // 钉钉小程序
 declare const qq: any;   // QQ 小程序、QQ 小游戏
 declare const swan: any; // 百度小程序
 
+import { debugLog, debugError } from './debug';
+
 /**
  * 小程序平台 SDK 接口
  */
@@ -54,25 +56,40 @@ let currentSdk: SDK = {
  * 获取跨平台的 SDK
  */
 const getSDK = () => {
+  debugLog('[Sentry CrossPlatform] Detecting platform...');
+  debugLog('[Sentry CrossPlatform] typeof uni:', typeof uni);
+  debugLog('[Sentry CrossPlatform] typeof wx:', typeof wx);
+
   if (typeof uni === "object") {
+    debugLog('[Sentry CrossPlatform] Using uni SDK');
+    debugLog('[Sentry CrossPlatform] uni.request available:', typeof uni.request);
     currentSdk = uni;
   } else if (typeof wx === "object") {
+    debugLog('[Sentry CrossPlatform] Using wx SDK');
+    debugLog('[Sentry CrossPlatform] wx.request available:', typeof wx.request);
     currentSdk = wx;
   } else if (typeof my === "object") {
+    debugLog('[Sentry CrossPlatform] Using my SDK');
     currentSdk = my;
   } else if (typeof tt === "object") {
+    debugLog('[Sentry CrossPlatform] Using tt SDK');
     currentSdk = tt;
   } else if (typeof dd === "object") {
+    debugLog('[Sentry CrossPlatform] Using dd SDK');
     currentSdk = dd;
   } else if (typeof qq === "object") {
+    debugLog('[Sentry CrossPlatform] Using qq SDK');
     currentSdk = qq;
   } else if (typeof swan === "object") {
+    debugLog('[Sentry CrossPlatform] Using swan SDK');
     currentSdk = swan;
   } else {
+    debugError('[Sentry CrossPlatform] No supported platform detected!');
     // tslint:disable-next-line:no-console
     console.log("sentry-uniapp 暂不支持此平台, 快应用请使用 sentry-quickapp");
   }
 
+  debugLog('[Sentry CrossPlatform] Final SDK.request type:', typeof currentSdk.request);
   return currentSdk;
 };
 
@@ -104,4 +121,4 @@ const getAppName = () => {
 const sdk = getSDK();
 const appName = getAppName();
 
-export {sdk, appName};
+export { sdk, appName };

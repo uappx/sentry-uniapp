@@ -9,6 +9,9 @@ import {
 import { createStackParser, nodeStackLineParser } from '@sentry/core';
 import type { Integration, StackParser } from '@sentry/core';
 
+// Import polyfills for WeChat miniprogram compatibility
+import './polyfills';
+
 import { UniappClient, UniappOptions, ReportDialogOptions } from './client';
 import { makeUniappTransport } from './transport';
 import {
@@ -16,6 +19,7 @@ import {
   systemIntegration,
   routerIntegration,
 } from './integrations';
+import { setDebugEnabled, debugLog } from './debug';
 
 /** Get the default integrations for the Uniapp SDK. */
 function getDefaultIntegrations(options: UniappOptions): Integration[] {
@@ -36,6 +40,13 @@ function getDefaultIntegrations(options: UniappOptions): Integration[] {
  * Initialize the Sentry Uniapp SDK.
  */
 export function init(options: Partial<UniappOptions> = {}): void {
+  // Enable debug mode if requested
+  if (options.debug) {
+    setDebugEnabled(true);
+  }
+
+  debugLog('[Sentry SDK] init() called with options:', options);
+
   const finalOptions: UniappOptions = {
     stackParser: createStackParser(nodeStackLineParser()),
     transport: makeUniappTransport,
@@ -43,16 +54,26 @@ export function init(options: Partial<UniappOptions> = {}): void {
     ...options,
   };
 
+  debugLog('[Sentry SDK] finalOptions.transport:', typeof finalOptions.transport);
+  debugLog('[Sentry SDK] finalOptions.dsn:', finalOptions.dsn);
+
   // Set default integrations if not provided
   if (!options.integrations) {
     finalOptions.integrations = getDefaultIntegrations(finalOptions);
+    debugLog('[Sentry SDK] Using default integrations, count:', finalOptions.integrations.length);
   }
 
+  debugLog('[Sentry SDK] Creating UniappClient...');
   const client = new UniappClient(finalOptions);
   const scope = getCurrentScope();
 
+  debugLog('[Sentry SDK] Setting client to scope...');
   scope.setClient(client);
+
+  debugLog('[Sentry SDK] Initializing client...');
   client.init();
+
+  debugLog('[Sentry SDK] Initialization complete!');
 }
 
 /**
