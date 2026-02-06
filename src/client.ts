@@ -94,6 +94,11 @@ export class UniappClient extends BaseClient<UniappOptions> {
       version: SDK_VERSION,
     };
 
+    // Ensure JavaScript platform for proper sourcemap processing
+    if (!event.platform) {
+      event.platform = 'javascript';
+    }
+
     return super._prepareEvent(event, hint, scope);
   }
 

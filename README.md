@@ -24,72 +24,72 @@ npm install sentry-uniapp
 
 ```js
 export default {
-   onLaunch: function () {
-      console.log('App Launch');
-      sentry.init({
-         // __DSN__ 参考格式: https://8137b89b2d1c4e349da3a38dca80c5fe@sentry.io/1
-         dsn: '__DSN__',
-         release: 'uappx@1.0.0',  // sourcemap功能，必须与上传的 release 名称一致
-         dist: 'h5',              // sourcemap功能，必须与上传的 dist 一致
-         tracesSampleRate: 1.0,   // performance monitoring, 按需开启
-         debug: true,             // 启用调试日志, 按需开启
-      });
+  onLaunch: function () {
+    const dist = process.env.UNI_PLATFORM;
+    sentry.init({
+      // __DSN__ 参考格式: https://8137b89b2d1c4e349da3a38dca80c5fe@sentry.io/1
+      dsn: '__DSN__',
+      release: 'uappx@1.0.0',  // sourcemap功能，必须与上传的 release 名称一致
+      dist,                    // uniapp 多平台通过这个 dist 区分
+      tracesSampleRate: 1.0,   // performance monitoring, 按需开启
+      debug: true             // 启用调试日志, 按需开启
+    });
 
-      // 代码上报，extra 为可选的自定义对象内容
-      sentry.captureMessage('custom message from ' + uni.getSystemInfoSync().platform, {
-         UserId: 123,
-         Command: 'npm i -g uapp'
-      });
+    // 代码上报，extra 为可选的自定义对象内容
+    sentry.captureMessage('custom message from ' + uni.getSystemInfoSync().platform, {
+      UserId: 123,
+      Command: 'npm i -g uapp'
+    });
 
-      // 触发一个未定义函数的错误
-      balabala();
-   },
+    // 触发一个未定义函数的错误
+    balabala();
+  },
 
-   // sentry-uniapp 内部是通过 uni.onError 钩子函数捕获错误的
-   // 但目前 uni.onError 暂不支持 App (android / ios)，各平台支持情况参考：
-   // https://uniapp.dcloud.net.cn/api/application.html#onerror
-   //
-   // 通用方案：
-   // 可用 App.onError 自己处理，但需要先禁用 sentry 里的捕获
-   // 方法在 sentry.init 参数里加上 extraOptions: { onerror: false }
-   onError: function (e) {
-      sentry.captureException(e);
-   }
-}
+  // sentry-uniapp 内部是通过 uni.onError 钩子函数捕获错误的
+  // 但目前 uni.onError 暂不支持 App (android / ios)，各平台支持情况参考：
+  // https://uniapp.dcloud.net.cn/api/application.html#onerror
+  //
+  // 通用方案：
+  // 可用 App.onError 自己处理，但需要先禁用 sentry 里的捕获
+  // 方法在 sentry.init 参数里加上 extraOptions: { onerror: false }
+  onError: function (e) {
+    sentry.captureException(e);
+  }
+};
 ```
 
 3、其他可选配置
 
 ```js
    // Set user information, as well as tags and further extras
-   sentry.configureScope((scope) => {
-     scope.setExtra("battery", 0.7);
-     scope.setTag("user_mode", "admin");
-     scope.setUser({ id: "4711" });
-     // scope.clear();
-   });
+sentry.configureScope((scope) => {
+  scope.setExtra("battery", 0.7);
+  scope.setTag("user_mode", "admin");
+  scope.setUser({ id: "4711" });
+  // scope.clear();
+});
 
-   // Add a breadcrumb for future events
-   sentry.addBreadcrumb({
-     message: "My Breadcrumb",
-     // ...
-   });
+// Add a breadcrumb for future events
+sentry.addBreadcrumb({
+  message: "My Breadcrumb",
+  // ...
+});
 
-   // Capture exceptions, messages or manual events
-   // Error 无法定义标题，可以用下面的 captureMessage
-   sentry.captureException(new Error("Good bye"));
+// Capture exceptions, messages or manual events
+// Error 无法定义标题，可以用下面的 captureMessage
+sentry.captureException(new Error("Good bye"));
 
-   // captureMessage 可以定制消息标题，extra 为附加的对象内容
-   sentry.captureMessage("message title", {
-     extra
-   });
+// captureMessage 可以定制消息标题，extra 为附加的对象内容
+sentry.captureMessage("message title", {
+  extra
+});
 
-   sentry.captureEvent({
-     message: "Manual",
-     stacktrace: [
-       // ...
-     ],
-   });
+sentry.captureEvent({
+  message: "Manual",
+  stacktrace: [
+    // ...
+  ],
+});
 ```
 
 ## SourceMap 支持
@@ -133,48 +133,37 @@ export default {
 
    修改 `App.vue` 的 `sentry.init` 配置：
    ```javascript
+   const dist = process.env.UNI_PLATFORM;
+ 
    sentry.init({
      dsn: '__DSN__',
      release: 'uappx@1.0.0',  // 与 package.json version 保持一致
-     dist: 'h5',               // 平台标识：h5, android, ios 等
+     dist
    });
    ```
 
 4. **上传 sourcemap**
 
    ```bash
-   # H5 平台（完整支持）
-   npm run upload:sourcemaps:h5
+   # 微信小程序
+   npm run upload:sourcemaps:mp-weixin
    ```
+
+   > 注意 `uapp run dev:mp-weixin` 开发模式下，sentry vite plugin 不会上传 souremap，只能通过上面的命令上传。
 
 ### 平台支持情况
 
-| 平台                    | SourceMap 生成 | 支持程度                            |
-|-----------------------|--------------|---------------------------------|
-| **H5**                | ✅ 独立 .map 文件 | ⭐⭐⭐⭐⭐ 完整支持                      |
-| **微信小程序**             | ✅ 独立 .map 文件 | ⭐⭐ 要避免小程序二次编译压缩                 |
-| **App (Android/iOS)** | ⚠️ 内联 base64 | ⭐ 手动解码并创建 app-service.js.map 文件 |
-
-### 详细文档
-
-完整的 SourceMap 配置、上传、验证指南，请查看：
-
-📖 **[SOURCEMAP_GUIDE.md](./SOURCEMAP_GUIDE.md)**
-
-包含内容：
-- Sentry Auth Token 获取方法
-- 多平台上传配置
-- CI/CD 集成方案
-- 故障排查步骤
-- 验证 SourceMap 是否生效
+| 平台                    | SourceMap 生成            | 支持程度                        |
+|-----------------------|-------------------------|-----------------------------|
+| **H5**                | ✅ 独立 .map 文件            | ⭐⭐⭐⭐⭐ 完整支持                  |
+| **微信小程序**             | ✅ 独立 .map 文件            | ⭐⭐ 要避免小程序二次编译压缩             |
+| **App (Android/iOS)** | ⚠️ 内联 sourcemap(base64) | 默认不支持，需自行解决内联的 sourcemap 问题 |
 
 ## 参考示例
 
 项目代码里的 `uapp-demo`，通过 HBuilderX 打开即可，下面截图为 `uapp-demo` 在各平台测试结果。
 
 ![pass](./assets/sentry-screetshot.png)
-
-`uapp-demo` 项目已集成 SourceMap 上传功能，详见 [SOURCEMAP_GUIDE.md](./SOURCEMAP_GUIDE.md)
 
 ## 常见问题
 
@@ -191,18 +180,32 @@ export default {
 
 [JS Framework] 开头，由 framewrok 底层拦截 `不会触发 sentry 上报`，错误信息如下:
 
-> [JS Framework] Failed to execute the callback function:[ERROR] : [JS Framework] Failed to execute the callback function:ReferenceError: Can't find variable: balabala __ERROR
+> [JS Framework] Failed to execute the callback function:[ERROR] : [JS Framework] Failed to execute the callback
+> function:ReferenceError: Can't find variable: balabala __ERROR
 
 Vue 层报的错误，可以触发 sentry 上报，错误信息如下:
 
-> [Vue warn]: Error in onLaunch hook: "ReferenceError: Can't find variable: balabala"[ERROR] : [Vue warn]: Error in onLaunch hook: "ReferenceError: Can't find variable: balabala"(found at App.vue:1) __ERROR
+> [Vue warn]: Error in onLaunch hook: "ReferenceError: Can't find variable: balabala"[ERROR] : [Vue warn]: Error in
+> onLaunch hook: "ReferenceError: Can't find variable: balabala"(found at App.vue:1) __ERROR
+
+3、sourcemap 问题
+
+官方给出3中定位方法:
+
+第一种，就是 sentry vite plugin，这个只有 h5 编译，会植入 debug_meta, debug_id，植入这2个的，定位最准确，没有啥注意事项。
+
+第二种，因为 uniapp 是多平台，除h5之外，都没有 debug_meta, debug_id。只能靠 release, dist 参数匹配定位。所以每次 sourcemap 和
+uniapp 编译的代码，这两个都要保证唯一匹配。不要同一个平台，同一个release 不变，会影响 sourcemap 定位。保证release 的唯一性。
+
+第三种，外网部署 host，这个忽略，不适合多平台。
 
 ## 功能特点
 
 - [x] 基于 [sentry-javascript 最新的基础模块](https://www.yuque.com/lizhiyao/dxy/zevhf1#0GMCN) 封装
 - [x] 遵守[官方统一的 API 设计文档](https://www.yuque.com/lizhiyao/dxy/gc3b9r#vQdTs)，使用方式和官方保持一致
 - [x] 使用 [TypeScript](https://www.typescriptlang.org/) 进行编写
-- [x] 包含 Sentry SDK（如：[@sentry/browser](https://github.com/getsentry/sentry-javascript/tree/master/packages/browser)）的所有基础功能
+- [x] 包含 Sentry SDK（如：[@sentry/browser](https://github.com/getsentry/sentry-javascript/tree/master/packages/browser)
+  ）的所有基础功能
 - [x] 支持 `ES6`、`CommonJS` 两种模块系统（支持小程序原生开发方式、使用小程序框架开发方式两种开发模式下使用）
 - [x] 默认监听并上报小程序的 onError、onUnhandledRejection、onPageNotFound、onMemoryWarning 事件返回的信息（各事件支持程度与对应各小程序官方保持一致）
 - [x] 默认上报运行小程序的设备、操作系统、应用版本信息

@@ -53,6 +53,57 @@ const geckoEval = /(\S+) line (\d+)(?: > eval line \d+)* > eval/i;
 const chromeEval = /\((\S*)(?::(\d+))(?::(\d+))\)/;
 const miniapp = /^\s*at (\w.*) \((\w*.js):(\d*):(\d*)/i;
 
+function getLocationHref(): string {
+  const g: any = typeof globalThis !== "undefined" ? globalThis : undefined;
+  if (!g) {
+    return "";
+  }
+
+  const location = g.location || (g.document && g.document.location);
+  const href = location && location.href;
+  return typeof href === "string" ? href : "";
+}
+
+function stripUrlQueryAndFragment(url: string): string {
+  return url.split(/[?#]/)[0];
+}
+
+function isAbsoluteUrl(url: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url);
+}
+
+function normalizeStackFrameUrl(url: string): string {
+  if (!url) {
+    return url;
+  }
+
+  const cleaned = stripUrlQueryAndFragment(url);
+
+  if (
+    !cleaned ||
+    cleaned === "native" ||
+    cleaned === "[native code]" ||
+    cleaned === "<anonymous>"
+  ) {
+    return cleaned;
+  }
+
+  if (isAbsoluteUrl(cleaned)) {
+    return cleaned;
+  }
+
+  const locationHref = getLocationHref();
+  if (!locationHref) {
+    return cleaned;
+  }
+
+  try {
+    return new URL(cleaned, locationHref).toString();
+  } catch (e) {
+    return cleaned;
+  }
+}
+
 /** JSDoc */
 export function computeStackTrace(ex: any): StackTrace {
   // console.log('computeStackTrace', ex)
@@ -120,7 +171,7 @@ function computeStackTraceFromStackProp(ex: any): StackTrace | null {
         parts[4] = submatch[3]; // column
       }
       element = {
-        url: parts[2],
+        url: normalizeStackFrameUrl(parts[2]),
         func: parts[1] || UNKNOWN_FUNCTION,
         args: isNative ? [parts[2]] : [],
         line: parts[3] ? +parts[3] : null,
@@ -128,7 +179,7 @@ function computeStackTraceFromStackProp(ex: any): StackTrace | null {
       };
     } else if ((parts = winjs.exec(lines[i]))) {
       element = {
-        url: parts[2],
+        url: normalizeStackFrameUrl(parts[2]),
         func: parts[1] || UNKNOWN_FUNCTION,
         args: [],
         line: +parts[3],
@@ -150,7 +201,7 @@ function computeStackTraceFromStackProp(ex: any): StackTrace | null {
         stack[0].column = (ex.columnNumber as number) + 1;
       }
       element = {
-        url: parts[3],
+        url: normalizeStackFrameUrl(parts[3]),
         func: parts[1] || UNKNOWN_FUNCTION,
         args: parts[2] ? parts[2].split(",") : [],
         line: parts[4] ? +parts[4] : null,
@@ -158,7 +209,7 @@ function computeStackTraceFromStackProp(ex: any): StackTrace | null {
       };
     } else if ((parts = miniapp.exec(lines[i]))) {
       element = {
-        url: parts[2],
+        url: normalizeStackFrameUrl(parts[2]),
         func: parts[1] || UNKNOWN_FUNCTION,
         args: [],
         line: parts[3] ? +parts[3] : null,
@@ -206,7 +257,7 @@ function computeStackTraceFromStacktraceProp(ex: any): StackTrace | null {
     let element = null;
     if ((parts = opera10Regex.exec(lines[line]))) {
       element = {
-        url: parts[2],
+        url: normalizeStackFrameUrl(parts[2]),
         func: parts[3],
         args: [],
         line: +parts[1],
@@ -214,7 +265,7 @@ function computeStackTraceFromStacktraceProp(ex: any): StackTrace | null {
       };
     } else if ((parts = opera11Regex.exec(lines[line]))) {
       element = {
-        url: parts[6],
+        url: normalizeStackFrameUrl(parts[6]),
         func: parts[3] || parts[4],
         args: parts[5] ? parts[5].split(",") : [],
         line: +parts[1],

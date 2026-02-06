@@ -1,6 +1,6 @@
 {
   "name": "sentry-uniapp",
-  "version": "2.8.2",
+  "version": "2.8.5",
   "description": "用于Uniapp/小程序/快应用等平台的 Sentry SDK",
   "repository": "git://github.com/uappx/sentry-uniapp.git",
   "homepage": "https://github.com/uappx/sentry-uniapp",
@@ -29,6 +29,7 @@
     "node": ">=14"
   },
   "devDependencies": {
+    "@sentry/typescript": "^8.0.0",
     "@types/node": "^20.0.0",
     "install": "^0.13.0",
     "miniprogram-api-typings": "^2.7.7-2",

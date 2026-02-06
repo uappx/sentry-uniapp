@@ -20,6 +20,7 @@ import {
   routerIntegration,
 } from './integrations';
 import { setDebugEnabled, debugLog } from './debug';
+import { appName, sdk } from './crossPlatform';
 
 /** Get the default integrations for the Uniapp SDK. */
 function getDefaultIntegrations(options: UniappOptions): Integration[] {
@@ -53,6 +54,26 @@ export function init(options: Partial<UniappOptions> = {}): void {
     integrations: [],
     ...options,
   };
+
+  // Default dist to uniapp platform (or app name) to help match sourcemaps per platform.
+  if (!finalOptions.dist) {
+    try {
+      const systemInfo = sdk.getSystemInfoSync && sdk.getSystemInfoSync();
+      let platform =
+        systemInfo?.uniPlatform ||
+        systemInfo?.platform ||
+        systemInfo?.app ||
+        appName;
+      if (!platform && typeof globalThis !== 'undefined' && (globalThis as any).window) {
+        platform = 'h5';
+      }
+      if (typeof platform === 'string' && platform) {
+        finalOptions.dist = platform;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 
   debugLog('[Sentry SDK] finalOptions.transport:', typeof finalOptions.transport);
   debugLog('[Sentry SDK] finalOptions.dsn:', finalOptions.dsn);

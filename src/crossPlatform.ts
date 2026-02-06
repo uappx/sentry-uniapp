@@ -5,6 +5,7 @@ declare const tt: any;   // 字节跳动小程序
 declare const dd: any;   // 钉钉小程序
 declare const qq: any;   // QQ 小程序、QQ 小游戏
 declare const swan: any; // 百度小程序
+declare const window: any; // Browser / Electron environment
 
 import { debugLog, debugError } from './debug';
 
@@ -55,15 +56,42 @@ let currentSdk: SDK = {
 /**
  * 获取跨平台的 SDK
  */
+
+const inBrowser = typeof window !== 'undefined';
+
 const getSDK = () => {
-  debugLog('[Sentry CrossPlatform] Detecting platform...');
-  debugLog('[Sentry CrossPlatform] typeof uni:', typeof uni);
-  debugLog('[Sentry CrossPlatform] typeof wx:', typeof wx);
 
   if (typeof uni === "object") {
-    debugLog('[Sentry CrossPlatform] Using uni SDK');
-    debugLog('[Sentry CrossPlatform] uni.request available:', typeof uni.request);
     currentSdk = uni;
+
+    // 如果是在浏览器环境（H5/Electron），且没有原生 request，则使用 fetch polyfill
+    if (inBrowser && !currentSdk.request) {
+
+      currentSdk.request = function (options) {
+        const { url, method = 'GET', data, header = {}, success, fail, complete } = options;
+        fetch(url, {
+          method: method,
+          headers: header,
+          body: data,
+        })
+          .then(response => {
+            return response.text().then(text => ({
+              statusCode: response.status,
+              header: Object.fromEntries(response.headers.entries()),
+              data: text,
+            }));
+          })
+          .then(res => {
+            success && success(res);
+            complete && complete(res);
+          })
+          .catch(error => {
+            const errRes = { errMsg: error.message };
+            fail && fail(errRes);
+            complete && complete(errRes);
+          });
+      };
+    }
   } else if (typeof wx === "object") {
     debugLog('[Sentry CrossPlatform] Using wx SDK');
     debugLog('[Sentry CrossPlatform] wx.request available:', typeof wx.request);
