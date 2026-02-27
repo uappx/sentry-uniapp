@@ -1,6 +1,6 @@
 {
   "name": "sentry-uniapp",
-  "version": "2.8.6",
+  "version": "2.8.7",
   "description": "用于Uniapp/小程序/快应用等平台的 Sentry SDK",
   "repository": "git://github.com/uappx/sentry-uniapp.git",
   "homepage": "https://github.com/uappx/sentry-uniapp",

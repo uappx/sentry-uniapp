@@ -25,7 +25,7 @@ const _routerIntegration = ((options: RouterOptions = {}) => {
       try {
         const routers = getCurrentPages().map((route: { route: string; options: object }) => ({
           route: route.route,
-          options: route.options,
+          options: JSON.stringify(route?.options ?? {}),
         }));
 
         return {
