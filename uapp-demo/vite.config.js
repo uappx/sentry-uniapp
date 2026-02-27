@@ -22,7 +22,7 @@ export default defineConfig({
 
       // 禁用自动上传（可通过环境变量控制）
       disable: process.env.SENTRY_UPLOAD === 'false',
-      release: { name: SENTRY_RELEASE, dist: UNI_PLATFORM },
+      release: { name: SENTRY_RELEASE, dist: UNI_PLATFORM, setCommits: { auto: true } },
 
       // Sourcemap 上传配置
       sourcemaps: {

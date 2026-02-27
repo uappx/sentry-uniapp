@@ -15,12 +15,12 @@ import { debugLog, debugError } from './debug';
 interface SDK {
   request: Function;
   httpRequest?: Function; // 针对钉钉小程序
-  getSystemInfo: Function;
   getSystemInfoSync: Function;
   onError?: Function;
   onUnhandledRejection?: Function;
   onPageNotFound?: Function;
   onMemoryWarning?: Function;
+  URLSearchParams: Function;
   getLaunchOptionsSync?: Function;
 }
 
@@ -49,7 +49,7 @@ let currentSdk: SDK = {
   getSystemInfoSync: () => {
   },
   // tslint:disable-next-line: no-empty
-  getSystemInfo: () => {
+  URLSearchParams: () => {
   },
 };
 
